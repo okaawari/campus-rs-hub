@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff, Lock, BookOpen, CheckCircle } from "lucide-react"
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -229,5 +229,27 @@ export default function ResetPasswordPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-muted py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <Link href="/" className="flex items-center justify-center space-x-2 mb-6">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <span className="text-2xl font-bold text-foreground">Campus Hub</span>
+            </Link>
+            <h2 className="text-3xl font-bold text-foreground">Loading...</h2>
+          </div>
+        </div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   )
 }
