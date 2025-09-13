@@ -30,6 +30,9 @@ export function Navbar() {
   const pathname = usePathname()
   const { user, profile, loading, signOut } = useAuth()
 
+  // Debug logging
+  console.log('Navbar render:', { user: !!user, profile: !!profile, loading })
+
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4">
@@ -53,10 +56,10 @@ export function Navbar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-in-out relative group",
                     isActive
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      ? "bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50 hover:shadow-sm"
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -83,15 +86,20 @@ export function Navbar() {
                     {profile ? `${profile.first_name} ${profile.last_name}` : user.email}
                   </span>
                 </div>
-                <Button variant="outline" size="sm" onClick={async () => {
-                  console.log("Attempting logout...")
-                  try {
-                    await signOut()
-                    console.log("Logout successful")
-                  } catch (error) {
-                    console.error("Logout error:", error)
-                  }
-                }}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200 hover:shadow-md"
+                  onClick={async () => {
+                    console.log("Attempting logout...")
+                    try {
+                      await signOut()
+                      console.log("Logout successful")
+                    } catch (error) {
+                      console.error("Logout error:", error)
+                    }
+                  }}
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
                 </Button>
@@ -99,13 +107,20 @@ export function Navbar() {
             ) : (
               <>
                 <Link href="/auth/login">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 hover:shadow-md"
+                  >
                     <LogIn className="w-4 h-4 mr-2" />
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth/register">
-                  <Button size="sm">
+                  <Button 
+                    size="sm"
+                    className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all duration-200"
+                  >
                     <User className="w-4 h-4 mr-2" />
                     Sign Up
                   </Button>
@@ -127,10 +142,10 @@ export function Navbar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-in-out relative group",
                     isActive
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      ? "bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50 hover:shadow-sm"
                   )}
                 >
                   <Icon className="w-4 h-4" />

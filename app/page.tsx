@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { AuthDebug } from "@/components/auth-debug"
 import { 
   BookOpen, 
   Users, 
@@ -62,6 +63,13 @@ const stats = [
 export default function Home() {
   return (
     <div className="min-h-screen">
+      {/* Debug Section - Remove after fixing */}
+      <div className="bg-yellow-50 p-4 border-b">
+        <div className="container mx-auto">
+          <AuthDebug />
+        </div>
+      </div>
+      
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-muted to-accent py-20">
         <div className="container mx-auto px-4 text-center">

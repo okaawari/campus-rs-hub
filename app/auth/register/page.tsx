@@ -70,10 +70,19 @@ export default function RegisterPage() {
       console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "Set" : "Not set")
       console.log("Supabase Key:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Set" : "Not set")
 
-      // First, sign up the user
+      // First, sign up the user with metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            student_id: formData.studentId,
+            major: formData.major,
+            year: formData.year,
+          }
+        }
       })
 
       console.log("Registration response:", { authData, authError })
@@ -89,43 +98,34 @@ export default function RegisterPage() {
       }
 
       if (authData.user) {
-        // Create user profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            email: formData.email,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            student_id: formData.studentId || null,
-            major: formData.major || null,
-            year: formData.year || null,
-            role: 'student'
-          })
+        // The database trigger will automatically create the profile
+        // We just need to wait a moment for it to complete
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        // Try to update the profile with additional data if the trigger created it
+        try {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              student_id: formData.studentId || null,
+              major: formData.major || null,
+              year: formData.year || null,
+            })
+            .eq('id', authData.user.id)
 
-        if (profileError) {
-          console.error('Profile creation error:', profileError)
-          
-          // Check if it's a table doesn't exist error
-          if (profileError.code === 'PGRST116' || profileError.message.includes('relation "public.profiles" does not exist')) {
-            toast({
-              title: "Database Setup Required",
-              description: "Account created successfully! Please run the database migration to complete setup.",
-              variant: "destructive",
-            })
+          if (updateError) {
+            console.warn('Profile update failed:', updateError)
           } else {
-            toast({
-              title: "Profile Creation Failed",
-              description: "Account created but profile setup failed. Please complete your profile later.",
-              variant: "destructive",
-            })
+            console.log('Profile updated with additional data')
           }
-        } else {
-          toast({
-            title: "Registration Successful!",
-            description: "Your account has been created successfully. Please check your email to verify your account.",
-          })
+        } catch (updateError) {
+          console.warn('Profile update error:', updateError)
         }
+
+        toast({
+          title: "Registration Successful!",
+          description: "Your account has been created successfully. Please check your email to verify your account.",
+        })
 
         router.push("/auth/login")
       }

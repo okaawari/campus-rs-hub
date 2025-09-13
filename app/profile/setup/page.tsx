@@ -69,15 +69,51 @@ export default function ProfileSetupPage() {
     setIsLoading(true)
 
     try {
+      // First check if profile exists, if not create it
+      let profileExists = false
+      if (profile) {
+        profileExists = true
+      } else {
+        // Try to create the profile if it doesn't exist
+        const { error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email || '',
+            first_name: '',
+            last_name: '',
+            student_id: formData.studentId || null,
+            major: formData.major || null,
+            year: formData.year || null,
+            bio: formData.bio || null,
+            role: 'student'
+          })
+
+        if (createError) {
+          console.error('Profile creation error:', createError)
+          // If profile creation fails, try update anyway (in case profile exists but wasn't loaded)
+          profileExists = true
+        } else {
+          profileExists = true
+        }
+      }
+
+      // Update or upsert the profile
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
+          email: user.email || '',
+          first_name: profile?.first_name || '',
+          last_name: profile?.last_name || '',
           student_id: formData.studentId || null,
           major: formData.major || null,
           year: formData.year || null,
           bio: formData.bio || null,
+          role: 'student'
+        }, {
+          onConflict: 'id'
         })
-        .eq('id', user.id)
 
       if (error) {
         toast({

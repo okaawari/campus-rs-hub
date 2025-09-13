@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -44,22 +45,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (error) {
-        console.error('Error fetching profile:', {
+        console.warn('Profile fetch error:', {
           message: error.message,
           details: error.details,
           hint: error.hint,
           code: error.code
         })
         
-        // If the table doesn't exist, we'll handle it gracefully
-        if (error.code === 'PGRST116' || error.message.includes('relation "public.profiles" does not exist')) {
+        // Check for specific error types - these are expected for new users
+        if (error.code === 'PGRST116' && error.message.includes('No rows found')) {
+          console.log('Profile does not exist yet for user:', userId)
+          return null
+        }
+        
+        if (error.code === 'PGRST116' && error.message.includes('relation "public.profiles" does not exist')) {
           console.warn('Profiles table does not exist yet. Please run the database migration.')
           return null
         }
         
+        if (error.code === 'PGRST301' || error.message.includes('JWT')) {
+          console.warn('Authentication error - user may not be properly authenticated')
+          return null
+        }
+        
+        if (error.code === 'PGRST301' || error.message.includes('permission denied')) {
+          console.warn('Permission denied - RLS policy may be blocking access')
+          return null
+        }
+        
+        // For any other error, log it and return null
+        console.warn('Unexpected profile fetch error:', error)
         return null
       }
 
+      console.log('Profile fetched successfully:', data)
       return data
     } catch (error) {
       console.error('Unexpected error fetching profile:', error)
@@ -87,29 +106,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const getInitialSession = async () => {
       try {
+        console.log('Getting initial session...')
         const { data: { session } } = await supabase.auth.getSession()
+        console.log('Initial session:', { session: !!session, user: !!session?.user })
         setUser(session?.user ?? null)
         
         if (session?.user) {
-          const profileData = await fetchProfile(session.user.id)
-          setProfile(profileData)
+          console.log('Fetching profile for user:', session.user.id)
+          try {
+            const profileData = await fetchProfile(session.user.id)
+            setProfile(profileData)
+          } catch (profileError) {
+            console.warn('Profile fetch failed during initialization:', profileError)
+            setProfile(null)
+          }
         }
       } catch (error) {
         console.error('Error getting initial session:', error)
       } finally {
+        console.log('Setting loading to false')
         setLoading(false)
       }
     }
+
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log('Auth initialization timeout - setting loading to false')
+      setLoading(false)
+    }, 5000) // 5 second timeout
 
     getInitialSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', { event, session: !!session, user: !!session?.user })
         setUser(session?.user ?? null)
         
         if (session?.user) {
-          const profileData = await fetchProfile(session.user.id)
-          setProfile(profileData)
+          try {
+            const profileData = await fetchProfile(session.user.id)
+            setProfile(profileData)
+          } catch (profileError) {
+            console.warn('Profile fetch failed during auth state change:', profileError)
+            setProfile(null)
+          }
         } else {
           setProfile(null)
         }
@@ -118,7 +158,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeoutId)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const value = {

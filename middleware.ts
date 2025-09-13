@@ -53,10 +53,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Redirect to home if accessing auth routes while authenticated
-  if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
+  // Temporarily disable auth route redirects to allow access to login/register
+  // TODO: Re-enable this once authentication is working properly
+  // if (isAuthRoute && user) {
+  //   // Check if the user session is actually valid
+  //   const { data: { session } } = await supabase.auth.getSession()
+  //   if (session?.user) {
+  //     return NextResponse.redirect(new URL('/', request.url))
+  //   }
+  //   // If no valid session, allow access to auth routes
+  // }
 
   return response
 }
