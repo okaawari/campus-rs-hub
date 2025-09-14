@@ -19,10 +19,24 @@ export function AuthDebug() {
     const testConnection = async () => {
       try {
         const supabase = createClient()
+        
+        // Test 1: Basic auth connection
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          setConnectionTest(`❌ Auth Error: ${sessionError.message}`)
+          return
+        }
+        
+        // Test 2: Try profiles table (might fail due to RLS)
         const { data, error } = await supabase.from('profiles').select('count').limit(1)
         
         if (error) {
-          setConnectionTest(`❌ Connection Error: ${error.message}`)
+          if (error.code === 'PGRST301' || error.message.includes('permission denied')) {
+            setConnectionTest("✅ Connection OK (RLS blocking profiles)")
+          } else {
+            setConnectionTest(`❌ Profiles Error: ${error.message}`)
+          }
         } else {
           setConnectionTest("✅ Connection OK")
         }

@@ -21,19 +21,56 @@ function ResetPasswordForm() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Check if we have the necessary tokens in the URL
-    const accessToken = searchParams.get('access_token')
-    const refreshToken = searchParams.get('refresh_token')
+    // Parse URL parameters from both query string and hash fragment
+    const urlParams = new URLSearchParams(window.location.search)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
     
-    if (!accessToken || !refreshToken) {
+    const accessToken = searchParams.get('access_token') || hashParams.get('access_token')
+    const refreshToken = searchParams.get('refresh_token') || hashParams.get('refresh_token')
+    
+    console.log('Reset password tokens:', { 
+      accessToken: !!accessToken, 
+      refreshToken: !!refreshToken,
+      hash: window.location.hash.substring(0, 50) + '...'
+    })
+    
+    if (!accessToken) {
+      console.log('No access token found, redirecting to forgot password')
       toast({
         title: "Invalid Link",
         description: "This password reset link is invalid or has expired.",
         variant: "destructive",
       })
       router.push('/auth/forgot-password')
+    } else {
+      console.log('Access token found, establishing session')
+      // Set the session with the access token
+      const setSession = async () => {
+        try {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || ''
+          })
+          
+          if (error) {
+            console.error('Session set error:', error)
+            toast({
+              title: "Session Error",
+              description: "Failed to establish session. Please try the reset link again.",
+              variant: "destructive",
+            })
+            router.push('/auth/forgot-password')
+          } else {
+            console.log('Session established successfully')
+          }
+        } catch (err) {
+          console.error('Session establishment error:', err)
+        }
+      }
+      
+      setSession()
     }
-  }, [searchParams, router, toast])
+  }, [searchParams, router, toast, supabase.auth])
 
   const validateForm = () => {
     if (password !== confirmPassword) {
@@ -132,6 +169,16 @@ function ResetPasswordForm() {
     )
   }
 
+  // Check for tokens in both query params and hash
+  const hashParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.substring(1)) : null
+  const accessToken = searchParams.get('access_token') || (hashParams?.get('access_token'))
+  
+  console.log('Reset password page render:', { 
+    accessToken: accessToken ? 'Present' : 'Missing',
+    isSuccess,
+    hash: typeof window !== 'undefined' ? window.location.hash.substring(0, 50) + '...' : 'N/A'
+  })
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -146,6 +193,11 @@ function ResetPasswordForm() {
           <p className="mt-2 text-sm text-muted-foreground">
             Enter your new password below.
           </p>
+          {accessToken && (
+            <p className="mt-2 text-xs text-green-600">
+              ✅ Valid reset token detected
+            </p>
+          )}
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

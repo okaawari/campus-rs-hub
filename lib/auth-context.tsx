@@ -107,7 +107,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getInitialSession = async () => {
       try {
         console.log('Getting initial session...')
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+          setLoading(false)
+          return
+        }
+        
         console.log('Initial session:', { session: !!session, user: !!session?.user })
         setUser(session?.user ?? null)
         
@@ -133,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const timeoutId = setTimeout(() => {
       console.log('Auth initialization timeout - setting loading to false')
       setLoading(false)
-    }, 5000) // 5 second timeout
+    }, 3000) // 3 second timeout
 
     getInitialSession()
 

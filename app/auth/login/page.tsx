@@ -34,10 +34,30 @@ export default function LoginPage() {
       console.log("Login response:", { data, error })
 
       if (error) {
-        console.error("Login error:", error)
+        console.error("Login error details:", {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        })
+        
+        // Provide more specific error messages
+        let errorTitle = "Login Failed"
+        let errorDescription = error.message
+        
+        if (error.message.includes("Invalid login credentials")) {
+          errorTitle = "Invalid Credentials"
+          errorDescription = "The email or password you entered is incorrect. Please check your credentials and try again."
+        } else if (error.message.includes("Email not confirmed")) {
+          errorTitle = "Email Not Verified"
+          errorDescription = "Please check your email and click the verification link before logging in."
+        } else if (error.message.includes("Too many requests")) {
+          errorTitle = "Too Many Attempts"
+          errorDescription = "Please wait a moment before trying to log in again."
+        }
+        
         toast({
-          title: "Login Failed",
-          description: error.message,
+          title: errorTitle,
+          description: errorDescription,
           variant: "destructive",
         })
         return
@@ -49,8 +69,8 @@ export default function LoginPage() {
           title: "Welcome back!",
           description: "You have successfully logged in.",
         })
+        // Redirect to home page
         router.push("/")
-        router.refresh()
       }
     } catch (error) {
       console.error("Unexpected login error:", error)

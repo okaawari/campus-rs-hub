@@ -70,8 +70,13 @@ export default function RegisterPage() {
       console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "Set" : "Not set")
       console.log("Supabase Key:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Set" : "Not set")
 
+      // Create a timeout promise to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Registration timeout - please try again')), 30000)
+      )
+
       // First, sign up the user with metadata
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const signUpPromise = supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -84,6 +89,12 @@ export default function RegisterPage() {
           }
         }
       })
+
+      // Race between signup and timeout
+      const { data: authData, error: authError } = await Promise.race([
+        signUpPromise,
+        timeoutPromise
+      ]) as { data: any; error: any }
 
       console.log("Registration response:", { authData, authError })
 
@@ -98,41 +109,37 @@ export default function RegisterPage() {
       }
 
       if (authData.user) {
-        // The database trigger will automatically create the profile
-        // We just need to wait a moment for it to complete
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        // Try to update the profile with additional data if the trigger created it
-        try {
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({
-              student_id: formData.studentId || null,
-              major: formData.major || null,
-              year: formData.year || null,
-            })
-            .eq('id', authData.user.id)
-
-          if (updateError) {
-            console.warn('Profile update failed:', updateError)
-          } else {
-            console.log('Profile updated with additional data')
-          }
-        } catch (updateError) {
-          console.warn('Profile update error:', updateError)
-        }
-
+        console.log("Registration successful:", authData.user)
         toast({
           title: "Registration Successful!",
           description: "Your account has been created successfully. Please check your email to verify your account.",
         })
 
+        // Redirect to login page immediately
         router.push("/auth/login")
       }
     } catch (error) {
+      console.error("Registration error:", error)
+      
+      let errorTitle = "Registration Failed"
+      let errorDescription = "An unexpected error occurred. Please try again."
+      
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorTitle = "Registration Timeout"
+          errorDescription = "Registration is taking too long. Please check your internet connection and try again."
+        } else if (error.message.includes('email')) {
+          errorTitle = "Invalid Email"
+          errorDescription = "Please enter a valid email address."
+        } else if (error.message.includes('password')) {
+          errorTitle = "Invalid Password"
+          errorDescription = "Password must be at least 6 characters long."
+        }
+      }
+      
       toast({
-        title: "Registration Failed",
-        description: "An unexpected error occurred. Please try again.",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       })
     } finally {

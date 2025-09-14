@@ -5,6 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
+import { ProfileCreationHandler } from "@/components/profile-creation-handler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
+            <ProfileCreationHandler />
             <Navbar />
             <main className="container mx-auto px-4 py-8">
               {children}

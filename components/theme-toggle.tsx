@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils"
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
@@ -37,16 +38,34 @@ export function ThemeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+      <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border border-border shadow-lg">
+        <DropdownMenuItem 
+          onClick={() => setTheme("light")} 
+          className={cn(
+            "focus:bg-accent focus:text-accent-foreground",
+            theme === "light" && "bg-accent/50 text-accent-foreground"
+          )}
+        >
           <Sun className="mr-2 h-4 w-4" />
           <span>Light</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem 
+          onClick={() => setTheme("dark")} 
+          className={cn(
+            "focus:bg-accent focus:text-accent-foreground",
+            theme === "dark" && "bg-accent/50 text-accent-foreground"
+          )}
+        >
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        <DropdownMenuItem 
+          onClick={() => setTheme("system")} 
+          className={cn(
+            "focus:bg-accent focus:text-accent-foreground",
+            theme === "system" && "bg-accent/50 text-accent-foreground"
+          )}
+        >
           <Monitor className="mr-2 h-4 w-4" />
           <span>System</span>
         </DropdownMenuItem>
